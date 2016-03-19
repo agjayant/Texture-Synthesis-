@@ -58,8 +58,29 @@ def GetNeighbourWindow(px, Image, WindowSize):
     bot = min( Image.shape[1], y + WindowSize/2 )
     return Image[ left : right, top : bot ]             #CAUTION : FIX IT...the range
  
-def FindMatches():
-    dosomething
+def FindMatches(Template, SampleImage):
+#initialise the list that contains the Matches
+	Matches=[]
+	temp = [3][3]
+
+#	gaussian =
+	
+
+#loop through all the windows in the Sample Image
+	#    get SSD with template in a temp matrix
+	#    multiply it with some matrix to incorporate the gausssian
+	#    if below a threshold copy that patch in the list
+
+	height,width = SampleImage.shape
+	for i in range(height):
+		for j in range(width):
+			for k in range(3):
+				for l in range(3):
+					temp[k][l]= (Template[k, l] - SampleImage[i+k , j+l])**2;
+		
+				
+
+#return that list
 
 def RandomPick( MatchList ):
     return random.randrange(0, len(MatchList), 1)
