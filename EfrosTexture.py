@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 #Image Loading and initializations
-img_sample = cv2.imread("/home/afroz/Downloads/Namboodiri/sample_texture.jpg")
+img_sample = cv2.imread("sample_texture.jpg")
 img_height = 256
 img_width = 256
 #empty_pixel = np.zeros((1,1,3), np.uint8)
@@ -59,28 +59,34 @@ def GetNeighbourWindow(px, Image, WindowSize):
     return Image[ left : right, top : bot ]             #CAUTION : FIX IT...the range
  
 def FindMatches(Template, SampleImage):
-#initialise the list that contains the Matches
+
 	Matches=[]
-	temp = [3][3]
+	temp = 0
 
-#	gaussian =
-	
-
-#loop through all the windows in the Sample Image
-	#    get SSD with template in a temp matrix
-	#    multiply it with some matrix to incorporate the gausssian
-	#    if below a threshold copy that patch in the list
+	# parameters to be customized
+	# harcoded for 3
+	gauss = 2
+	thresh = 1	
 
 	height,width = SampleImage.shape
 	for i in range(height):
 		for j in range(width):
+
+			temp = 0
+
 			for k in range(3):
 				for l in range(3):
-					temp[k][l]= (Template[k, l] - SampleImage[i+k , j+l])**2;
-		
-				
+ 								
+					if k == 1 and l==1 :
+						temp= temp + gauss*(Template[k, l] - SampleImage[i+k , j+l])**2
+					else : 
+						temp= temp + (Template[k, l] - SampleImage[i+k , j+l])**2
+					
+			
+			if temp < thresh: 
+				Matches.append(SampleImage[i:i+2,j:j+2])
 
-#return that list
+	return Matches	
 
 def RandomPick( MatchList ):
     return random.randrange(0, len(MatchList), 1)
