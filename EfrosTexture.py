@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 #Image Loading and initializations
-img_sample = cv2.imread("/home/afroz/Downloads/Namboodiri/sample_texture.jpg")
+img_sample = cv2.imread("sample_texture.jpg")
 img_height = 256
 img_width = 256
 #empty_pixel = np.zeros((1,1,3), np.uint8)
@@ -16,6 +16,23 @@ Sigma = 6.4/WindowSize
 flag = -1
 boundary = []
 FilledPx = np.zeros((img_height,img_width),int)
+#Matches=[]
+
+def GetBoundaryPxls( px, Image ):
+    x,y = px
+    left = max( 0, x - 1 )
+    right = min( Image.shape[0], x + 2 )
+    top = max( 0, y - 1 )
+    bot = min( Image.shape[1], y + 2 )
+    #bound = Image[left:right,top:bot]
+    #bound.remove(px)
+    bound =[]
+    for i in range(left,right+1):
+	    for j in range(bot,top+1):
+		    bound.append((i,j))			     
+    np.delete(bound,px)
+    return bound
+
 
 for i in range(sample_height):
     for j in range(sample_width):
@@ -29,21 +46,14 @@ for i in range(sample_height):
             elif ( y - 20 > sample_width or y - 20 < 0 ):
                 boundary.append(px)
 
-def GetBoundaryPxls( px, Image ):
-    x,y = px
-    left = max( 0, x - 1 )
-    right = min( Image.shape[0], x + 2 )
-    top = max( 0, y - 1 )
-    bot = min( Image.shape[1], y + 2 )
-    bound = Image[left:right,top:bot]
-    bound.remove(px)
-    return bound
 
 
 #Function to return PixelList
 def PixelList(img):
     pxlList = []
-    height,width  = img.shape
+    #height,width  = img.shape
+    height = img.shape[1]
+    width = img.shape[0]
     for i in range(height):
         for j in range(width):
             if FilledPx[i,j] == 0:
@@ -58,8 +68,49 @@ def GetNeighbourWindow(px, Image, WindowSize):
     bot = min( Image.shape[1], y + WindowSize/2 )
     return Image[ left : right, top : bot ]             #CAUTION : FIX IT...the range
  
-def FindMatches():
-    dosomething
+def FindMatches(Template, SampleImage):
+
+	#Valid Mask
+	ValidMask= np.zeros((WindowSize),int)
+	for k in range(WindowSize):
+		for l in range(WindowSize):
+			if Template[k,l] > 0:
+				ValidMask [k,l] = 1
+
+	#Gaussian Mask
+	############  HARD CODED FOR 3 ##############
+	GaussMask = np.zeros((WindowSize,WindowSize),int)
+	GaussMask[1,1] = 2  ####### To increase the weight of the center
+
+	# Total Weight
+	TotWeight = sum(sum(GaussMask*ValidMask))
+	
+	height,width = SampleImage.shape
+
+	SSD = np.zeros((height,width))
+
+	for i in range(height):
+		for j in range(width):
+
+			for k in range(WindowSize):
+				for l in range(WindowSize):
+					
+					dist = (Template[k,l]- SampleImage[i+k,j+l])**2
+					SSD[i,j]= SSD[i,j] + dist*ValidMask[k,l]*GaussMask[k,l]
+
+			SSD[i,j] = SSD[i,j] / TotWeight;
+
+	ErrThreshold = 0.1       #########################  To be played with
+	minSSD= np.amin(SSD)
+
+	Matches = []
+
+	for i in range(height):
+		for j in range(width):
+			if SSD[i,j] < minSSD*(1+ErrThreshold):
+				Matches.append((i,j))
+	
+	return Matches
 
 def RandomPick( MatchList ):
     return random.randrange(0, len(MatchList), 1)
@@ -106,10 +157,11 @@ def GrowImage(SampleImage, Image, WindowSize):
     return Image
 
 
+img  = GrowImage(img_sample,img,WindowSize)
 #Displaying Images
-# cv2.imshow('Sample Texture',img_sample)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-# cv2.imshow('Generated Image',img)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
+cv2.imshow('Sample Texture',img_sample)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+cv2.imshow('Generated Image',img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
