@@ -2,6 +2,7 @@
 
 import cv2
 import numpy as np
+import random
 
 #Image Loading and initializations
 img_sample = cv2.imread("sample_texture.jpg")
@@ -14,10 +15,11 @@ img = np.zeros((img_height,img_width,3), np.uint8)
 WindowSize = 3
 Sigma = 6.4/WindowSize
 flag = -1
-boundary = []
+#boundary = []
 FilledPx = np.zeros((img_height,img_width),int)
 #Matches=[]
 
+'''
 def GetBoundaryPxls( px, Image ):
     x,y = px
     left = max( 0, x - 1 )
@@ -46,7 +48,46 @@ for i in range(sample_height):
             elif ( y - 20 > sample_width or y - 20 < 0 ):
                 boundary.append(px)
 
+'''
 
+for i in range(sample_height):
+    for j in range(sample_width):
+        img[i + 10,j + 20] = img_sample[i,j]        #offset of (10,20)
+        FilledPx[i + 10,j + 20] = 1;
+ 
+
+'''
+def GetBoundary(px):
+    x,y = px
+    boundary.append((x-1,y-1))
+    i = x
+    while FilledPx[i,y] == 1:
+	    boundary.append((i,y-1))
+	    i= i+1
+    right  = i
+    boundary.append(end,y-1)
+    
+    j = y
+    while FilledPx[x,j] ==1 :
+	    boundary.append((x-1,j))
+	    j = j+1
+    bot = j
+
+    boundary.append(x-1,bot)
+
+    for i in range(x,end+1):
+	    boundary.append((i,bot))
+
+    for j in range(y,bot):
+	    boundary.append(end,j)
+	
+for i in range(sample_height):
+    for j in range(sample_width):
+        img[i + 10,j + 20] = img_sample[i,j]        #offset of (10,20)
+        FilledPx[i + 10,j + 20] = 1;
+                
+GetBoundary((10,20))
+'''
 
 #Function to return PixelList
 def PixelList(img):
@@ -71,34 +112,41 @@ def GetNeighbourWindow(px, Image, WindowSize):
 def FindMatches(Template, SampleImage):
 
 	#Valid Mask
-	ValidMask= np.zeros((WindowSize),int)
-	for k in range(WindowSize):
-		for l in range(WindowSize):
-			if Template[k,l] > 0:
+	h_template = Template.shape[0]
+	w_template = Template.shape[1]
+
+	ValidMask= np.zeros((h_template,w_template),int)
+
+	for k in range(h_template):
+		for l in range(w_template):
+			if sum(Template[k,l])> 0:
 				ValidMask [k,l] = 1
 
-	#Gaussian Mask
+	#Gaussian Mask #Irrelevant
 	############  HARD CODED FOR 3 ##############
-	GaussMask = np.zeros((WindowSize,WindowSize),int)
-	GaussMask[1,1] = 2  ####### To increase the weight of the center
+	GaussMask = np.ones((h_template,w_template),int)
+#	GaussMask[1,1] = 2  ####### To increase the weight of the center
 
 	# Total Weight
 	TotWeight = sum(sum(GaussMask*ValidMask))
 	
-	height,width = SampleImage.shape
+	height= SampleImage.shape[0]
+	width = SampleImage.shape[1]
 
 	SSD = np.zeros((height,width))
+#	print "hello"
+	for i in range(height-h_template):
+		for j in range(width-w_template):
 
-	for i in range(height):
-		for j in range(width):
-
-			for k in range(WindowSize):
-				for l in range(WindowSize):
-					
+			for k in range(h_template):
+				for l in range(w_template):
+										
 					dist = (Template[k,l]- SampleImage[i+k,j+l])**2
-					SSD[i,j]= SSD[i,j] + dist*ValidMask[k,l]*GaussMask[k,l]
+					SSD[i,j]= SSD[i,j] + sum(dist*ValidMask[k,l]*GaussMask[k,l])
+	#				print SSD[i,j]
 
-			SSD[i,j] = SSD[i,j] / TotWeight;
+			if SSD[i,j] > 0 :
+				SSD[i,j] = SSD[i,j]/TotWeight
 
 	ErrThreshold = 0.1       #########################  To be played with
 	minSSD= np.amin(SSD)
@@ -107,13 +155,13 @@ def FindMatches(Template, SampleImage):
 
 	for i in range(height):
 		for j in range(width):
-			if SSD[i,j] < minSSD*(1+ErrThreshold):
-				Matches.append((i,j))
+			if SSD[i,j] <= minSSD*(1+ErrThreshold):
+				Matches.append(SampleImage[i,j])
 	
 	return Matches
 
 def RandomPick( MatchList ):
-    return random.randrange(0, len(MatchList), 1)
+    return MatchList[random.randrange(0, len(MatchList), 1)]
 
 def error( px_match, px, WindowSize, Image ):
     ssd = 0
@@ -137,31 +185,66 @@ def error( px_match, px, WindowSize, Image ):
     # else: 
         # finl
 
+def GetBoundaryNaive(Image):
+	boundary =[]
+	height= Image.shape[0]
+	width = Image.shape[1]
+
+	for i in range(height):
+		for j in range(width):
+			if FilledPx[i,j] == 0:
+
+				left = max(0,j-1)
+				top = max(0,i-1)
+				right = min(j+1,width-1)
+				bot = min(i+1,height-1)
+
+				flag = 0
+				for k in range(left,right+1):
+					for l in range(top,bot+1):
+						if FilledPx[k,l] ==1:
+							flag =1
+							break
+					if flag ==1 :
+						break
+
+				if flag ==1:
+					boundary.append((i,j))
+	
+	return boundary
+				 
+	
+
 def GrowImage(SampleImage, Image, WindowSize):
     EmptyPixels = PixelList(Image)
     MaxErrThreshold = 0.3
     while len(EmptyPixels) > 0 :
-        progress = 0
+        #progress = 0
+	boundary = GetBoundaryNaive(Image)
         for px in boundary:
             Template = GetNeighbourWindow(px, Image, WindowSize)       
             BestMatches = FindMatches(Template, SampleImage)
             #Finds best matches from sample
+	    #print len(BestMatches)
             BestMatch = RandomPick(BestMatches)
-            if error( BestMatch, px, WindowSize, Image) < MaxErrThreshold:
-                px = BestMatch
-                progress = 1
-                EmptyPixels.remove(px)
-                FilledPx[px] = 1
-        if progress == 0:
-            MaxErrThreshold *= 1.1
+         #  if error( BestMatch, px, WindowSize, Image) < MaxErrThreshold:
+            Image[px] = BestMatch
+         #       progress = 1
+            EmptyPixels.remove(px)
+            FilledPx[px] = 1
+	    print BestMatch
+        #if progress == 0:
+        #    MaxErrThreshold *= 1.1
+
     return Image
 
 
 img  = GrowImage(img_sample,img,WindowSize)
 #Displaying Images
-cv2.imshow('Sample Texture',img_sample)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-cv2.imshow('Generated Image',img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#cv2.imshow('Sample Texture',img_sample)
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()
+#cv2.imshow('Generated Image',img)
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()
+cv2.imwrite("result.png",img)
