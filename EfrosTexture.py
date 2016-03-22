@@ -1,19 +1,24 @@
 #!/usr/bin/python
-
 import cv2
 import numpy as np
 import random
+import scipy.ndimage.filters as fi
 
 #Image Loading and initializations
-img_sample = cv2.imread("sample_texture.jpg")
-img_height = 256
-img_width = 256
+img_sample = cv2.imread("final.png")
+#img_height = 256
+#img_width = 256
 #empty_pixel = np.zeros((1,1,3), np.uint8)
+
 sample_height = img_sample.shape[0]
 sample_width = img_sample.shape[1]
+
+img_height = sample_height + 10
+img_width = sample_width + 10
+
 img = np.zeros((img_height,img_width,3), np.uint8)
-WindowSize = 3
-Sigma = 6.4/WindowSize
+WindowSize = 21
+Sigma = WindowSize/6.4
 flag = -1
 #boundary = []
 FilledPx = np.zeros((img_height,img_width),int)
@@ -52,9 +57,8 @@ for i in range(sample_height):
 
 for i in range(sample_height):
     for j in range(sample_width):
-        img[i + 10,j + 20] = img_sample[i,j]        #offset of (10,20)
-        FilledPx[i + 10,j + 20] = 1;
- 
+        img[i + 5,j + 5] = img_sample[i,j]        #offset of (5,5)
+        FilledPx[i + 5,j + 5] = 1; 
 
 '''
 def GetBoundary(px):
@@ -93,8 +97,8 @@ GetBoundary((10,20))
 def PixelList(img):
     pxlList = []
     #height,width  = img.shape
-    height = img.shape[1]
-    width = img.shape[0]
+    height = img.shape[0]
+    width = img.shape[1]
     for i in range(height):
         for j in range(width):
             if FilledPx[i,j] == 0:
@@ -122,10 +126,9 @@ def FindMatches(Template, SampleImage):
 			if sum(Template[k,l])> 0:
 				ValidMask [k,l] = 1
 
-	#Gaussian Mask #Irrelevant
-	############  HARD CODED FOR 3 ##############
-	GaussMask = np.ones((h_template,w_template),int)
-#	GaussMask[1,1] = 2  ####### To increase the weight of the center
+	inp = np.zeros((h_template,w_template))
+	inp[h_template//2,w_template//2] =10 
+	GaussMask = fi.gaussian_filter(inp,Sigma)
 
 	# Total Weight
 	TotWeight = sum(sum(GaussMask*ValidMask))
@@ -202,7 +205,7 @@ def GetBoundaryNaive(Image):
 				flag = 0
 				for k in range(left,right+1):
 					for l in range(top,bot+1):
-						if FilledPx[k,l] ==1:
+						if FilledPx[l,k] ==1:
 							flag =1
 							break
 					if flag ==1 :
@@ -233,6 +236,8 @@ def GrowImage(SampleImage, Image, WindowSize):
             EmptyPixels.remove(px)
             FilledPx[px] = 1
 	    print BestMatch
+	    print len(boundary)
+	    print len(EmptyPixels)
         #if progress == 0:
         #    MaxErrThreshold *= 1.1
 
