@@ -107,12 +107,12 @@ def PixelList(img):
     return pxlList
 
 def GetNeighbourWindow(px, Image, WindowSize):
-    x,y = px
+    y,x = px
     left = max( 0, x - WindowSize/2 )
-    right = min( Image.shape[0], x + WindowSize/2 )
+    right = min( Image.shape[1], x + WindowSize/2 )
     top = max( 0, y - WindowSize/2 )
-    bot = min( Image.shape[1], y + WindowSize/2 )
-    return Image[ left : right, top : bot ]             #CAUTION : FIX IT...the range
+    bot = min( Image.shape[0], y + WindowSize/2 )
+    return Image[ top : bot,left:right ]             #CAUTION : FIX IT...the range
 
 def FindMatches(Template, SampleImage):
 
@@ -172,7 +172,7 @@ def FindMatches(Template, SampleImage):
 	for i in range(height):
 		for j in range(width):
 			if SSD[i,j] <= minSSD*(1+ErrThreshold):
-				Matches.append(SampleImage[i,j])
+				Matches.append((i,j))
 	
 	return Matches
 
@@ -180,7 +180,7 @@ def RandomPick( MatchList ):
     return MatchList[random.randrange(0, len(MatchList), 1)]
 
 '''
-def error( px_match, px, WindowSize, Image ):
+def error( px_match, px, WindowSize,SampleImage, Image ):
     ssd = 0
     x1,y1 = px_match
     x2,y2 = px
@@ -193,6 +193,17 @@ def error( px_match, px, WindowSize, Image ):
             temp = Image[ x1 + i, y1 + j] - Image[ x2 + i, y2 + j]
             ssd += (temp[0]^2 + temp[1]^2 + temp[2]^2) * FilledPx[ x2 + i, y2 + j ]
     return ssd
+'''
+
+'''
+def error(px_match, px_tofill, SampleImage , Image ):
+	
+	sam = np.zeros((WindowSize,WindowSize,3),np.uint8)
+	fill = np.zeros((WindowSize,WindowSize,3),np.uint8)
+	
+	x,y =px_match
+
+	l = max(0,x )
 '''
 
 # def GetUnfilledNeighbours( Image, EmptyPixels ):
@@ -245,8 +256,8 @@ def GrowImage(SampleImage, Image, WindowSize):
             #Finds best matches from sample
 	    #print len(BestMatches)
             BestMatch = RandomPick(BestMatches)
-#            if error( BestMatch, px, WindowSize, Image) < MaxErrThreshold:
-            Image[px] = BestMatch
+#            if error( BestMatch, px, SampleImage, Image) < MaxErrThreshold:
+            Image[px] = SampleImage[BestMatch]
 #        	 progress = 1
             EmptyPixels.remove(px)
             FilledPx[px] = 1
