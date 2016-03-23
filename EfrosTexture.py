@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 import random
 import scipy.ndimage.filters as fi
+import sys
 
 #Image Loading and initializations
-img_sample = cv2.imread("final.png")
+img_sample = cv2.imread(sys.argv[1])
 #img_height = 256
 #img_width = 256
 #empty_pixel = np.zeros((1,1,3), np.uint8)
@@ -17,7 +18,7 @@ img_height = sample_height + 10
 img_width = sample_width + 10
 
 img = np.zeros((img_height,img_width,3), np.uint8)
-WindowSize = 21
+WindowSize = int(sys.argv[2])
 Sigma = WindowSize/6.4
 flag = -1
 #boundary = []
@@ -143,9 +144,10 @@ def FindMatches(Template, SampleImage):
 
 			for k in range(h_template):
 				for l in range(w_template):
-										
-					dist = (Template[k,l]- SampleImage[i+k,j+l])**2
-					SSD[i,j]= SSD[i,j] + sum(dist*ValidMask[k,l]*GaussMask[k,l])
+					a = Template[k,l]
+					b = SampleImage[i+k,j+l]										
+					dist = (int(a[0])-int(b[0]))**2+ (int(a[1])-int(b[1]))**2+ (int(a[2])-int(b[2]))**2 
+					SSD[i,j]= SSD[i,j] + (dist*ValidMask[k,l]*GaussMask[k,l])
 	#				print SSD[i,j]
 
 			if SSD[i,j] > 0 :
@@ -230,16 +232,17 @@ def GrowImage(SampleImage, Image, WindowSize):
             #Finds best matches from sample
 	    #print len(BestMatches)
             BestMatch = RandomPick(BestMatches)
-         #  if error( BestMatch, px, WindowSize, Image) < MaxErrThreshold:
+#            if error( BestMatch, px, WindowSize, Image) < MaxErrThreshold:
             Image[px] = BestMatch
-         #       progress = 1
+#        	 progress = 1
             EmptyPixels.remove(px)
             FilledPx[px] = 1
 	    print BestMatch
+
 	    print len(boundary)
 	    print len(EmptyPixels)
-        #if progress == 0:
-        #    MaxErrThreshold *= 1.1
+#        if progress == 0:
+#            MaxErrThreshold *= 1.1
 
     return Image
 
