@@ -113,7 +113,7 @@ def GetNeighbourWindow(px, Image, WindowSize):
     top = max( 0, y - WindowSize/2 )
     bot = min( Image.shape[1], y + WindowSize/2 )
     return Image[ left : right, top : bot ]             #CAUTION : FIX IT...the range
- 
+
 def FindMatches(Template, SampleImage):
 
 	#Valid Mask
@@ -138,14 +138,22 @@ def FindMatches(Template, SampleImage):
 	width = SampleImage.shape[1]
 
 	SSD = np.zeros((height,width))
+	minSSD = 100000      #infinity
 #	print "hello"
-	for i in range(height-h_template):
-		for j in range(width-w_template):
+	for i in range(h_template/2,height-h_template/2):
+		top = max(i-h_template/2, 0 )
+#		bot = min(i+h_template/2, height-1)
+		
+		for j in range(w_template/2, width-w_template/2):
+			
+			left = max(j- w_template/2, 0)
+#			right= min(j+w_template/2,width-1)
+	
 
 			for k in range(h_template):
 				for l in range(w_template):
 					a = Template[k,l]
-					b = SampleImage[i+k,j+l]										
+					b = SampleImage[top+k,left+l]										
 					dist = (int(a[0])-int(b[0]))**2+ (int(a[1])-int(b[1]))**2+ (int(a[2])-int(b[2]))**2 
 					SSD[i,j]= SSD[i,j] + (dist*ValidMask[k,l]*GaussMask[k,l])
 	#				print SSD[i,j]
@@ -153,8 +161,11 @@ def FindMatches(Template, SampleImage):
 			if SSD[i,j] > 0 :
 				SSD[i,j] = SSD[i,j]/TotWeight
 
+			if SSD[i,j] < minSSD :
+				minSSD = SSD[i,j]
+
 	ErrThreshold = 0.1       #########################  To be played with
-	minSSD= np.amin(SSD)
+
 
 	Matches = []
 
@@ -168,6 +179,7 @@ def FindMatches(Template, SampleImage):
 def RandomPick( MatchList ):
     return MatchList[random.randrange(0, len(MatchList), 1)]
 
+'''
 def error( px_match, px, WindowSize, Image ):
     ssd = 0
     x1,y1 = px_match
@@ -181,6 +193,7 @@ def error( px_match, px, WindowSize, Image ):
             temp = Image[ x1 + i, y1 + j] - Image[ x2 + i, y2 + j]
             ssd += (temp[0]^2 + temp[1]^2 + temp[2]^2) * FilledPx[ x2 + i, y2 + j ]
     return ssd
+'''
 
 # def GetUnfilledNeighbours( Image, EmptyPixels ):
     # if flag == -1:
