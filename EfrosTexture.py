@@ -128,7 +128,7 @@ def FindMatches(Template, SampleImage):
 				ValidMask [k,l] = 1
 
 	inp = np.zeros((h_template,w_template))
-	inp[h_template//2,w_template//2] =10 
+	inp[h_template//2,w_template//2] =1          ###### To be played with
 	GaussMask = fi.gaussian_filter(inp,Sigma)
 
 	# Total Weight
@@ -195,7 +195,6 @@ def error( px_match, px, WindowSize,SampleImage, Image ):
     return ssd
 '''
 
-'''
 def error(px_match, px_tofill, SampleImage , Image ):
 	
 	sam = np.zeros((WindowSize,WindowSize,3),np.uint8)
@@ -203,8 +202,52 @@ def error(px_match, px_tofill, SampleImage , Image ):
 	
 	x,y =px_match
 
-	l = max(0,x )
-'''
+	top= max(0,y-WindowSize/2)
+	bot= min(SampleImage.shape[0],y+WindowSize/2 )
+	left= max(0,x-WindowSize/2)
+	right=min(SampleImage.shape[1],x+WindowSize/2)
+
+	for i in range(top,bot):
+		for j in range(left,right):
+
+			k = i - (y-WindowSize/2)
+			l = j - (x-WindowSize/2)
+			sam[k,l] = SampleImage[i,j]
+
+	x,y =px_tofill
+
+	top= max(0,y-WindowSize/2)
+	bot= min(Image.shape[0],y+WindowSize/2 )
+	left= max(0,x-WindowSize/2)
+	right=min(Image.shape[1],x+WindowSize/2)
+
+	for i in range(top,bot):
+		for j in range(left,right):
+
+			k = i - (y-WindowSize/2)
+			l = j - (x-WindowSize/2)
+			fill[k,l] = Image[i,j]
+
+
+	inp = np.zeros((WindowSize,WindowSize))
+	inp[WindowSize//2,WindowSize//2] =0.1          ###### To be played with
+	GaussMask = fi.gaussian_filter(inp,Sigma)
+
+	ssd = 0
+	for i in range(WindowSize):
+		for j in range(WindowSize):
+			a = sam[i,j]
+			b = fill[i,j]
+			temp = 0
+			if sum(a) + sum(b) > 0:
+				temp = (int(a[0])-int(b[0]))**2+ (int(a[1])-int(b[1]))**2+ (int(a[2])-int(b[2]))**2 
+				temp = (temp*GaussMask[i,j])
+
+			ssd = ssd + temp
+
+	return ssd
+	
+
 
 # def GetUnfilledNeighbours( Image, EmptyPixels ):
     # if flag == -1:
@@ -248,7 +291,7 @@ def GrowImage(SampleImage, Image, WindowSize):
     EmptyPixels = PixelList(Image)
     MaxErrThreshold = 0.3
     while len(EmptyPixels) > 0 :
-        #progress = 0
+        progress = 0
 	boundary = GetBoundaryNaive(Image)
         for px in boundary:
             Template = GetNeighbourWindow(px, Image, WindowSize)       
@@ -256,17 +299,18 @@ def GrowImage(SampleImage, Image, WindowSize):
             #Finds best matches from sample
 	    #print len(BestMatches)
             BestMatch = RandomPick(BestMatches)
-#            if error( BestMatch, px, SampleImage, Image) < MaxErrThreshold:
-            Image[px] = SampleImage[BestMatch]
-#        	 progress = 1
-            EmptyPixels.remove(px)
-            FilledPx[px] = 1
-	    print BestMatch
+            if error( BestMatch, px, SampleImage, Image) < MaxErrThreshold:
+	          Image[px] = SampleImage[BestMatch]
+        	  progress = 1
+	          EmptyPixels.remove(px)
+                  FilledPx[px] = 1
+                  print BestMatch
 
 	    print len(boundary)
 	    print len(EmptyPixels)
-#        if progress == 0:
-#            MaxErrThreshold *= 1.1
+	    
+        if progress == 0:
+            MaxErrThreshold *= 1.1
 
     return Image
 
