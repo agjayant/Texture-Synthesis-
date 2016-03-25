@@ -271,18 +271,16 @@ def GetBoundaryNaive(Image):
 				right = min(j+1,width-1)
 				bot = min(i+1,height-1)
 
-				flag = 0
+				count = 0
 				for k in range(left,right+1):
 					for l in range(top,bot+1):
 						if FilledPx[l,k] ==1:
-							flag =1
-							break
-					if flag ==1 :
-						break
+							count += 1
 
-				if flag ==1:
-					boundary.append((i,j))
+				if count>0:
+					boundary.append((count,(i,j)))
 	
+	boundary.sort(reverse=True)
 	return boundary
 				 
 	
@@ -293,7 +291,8 @@ def GrowImage(SampleImage, Image, WindowSize):
     while len(EmptyPixels) > 0 :
         progress = 0
 	boundary = GetBoundaryNaive(Image)
-        for px in boundary:
+        for pix in boundary:
+	    px=pix[1]
             Template = GetNeighbourWindow(px, Image, WindowSize)       
             BestMatches = FindMatches(Template, SampleImage)
             #Finds best matches from sample
@@ -305,13 +304,13 @@ def GrowImage(SampleImage, Image, WindowSize):
 	          EmptyPixels.remove(px)
                   FilledPx[px] = 1
                   print BestMatch
-
-	    print len(boundary)
+#	    print len(boundary)
 	    print len(EmptyPixels)
 	    
         if progress == 0:
             MaxErrThreshold *= 1.1
 
+    	print MaxErrThreshold
     return Image
 
 
