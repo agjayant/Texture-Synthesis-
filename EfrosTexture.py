@@ -185,7 +185,7 @@ def GetBoundary(Image):
 
 def GrowImage(SampleImage, Image, WindowSize):
     EmptyPixels = PixelList(Image)
-    MaxErrThreshold = 0.3                    ############################### Parameter
+    MaxErrThreshold = 1.5                    ############################### Parameter
     while len(EmptyPixels) > 0 :
         progress = 0
 	boundary = GetBoundary(Image)
@@ -204,7 +204,8 @@ def GrowImage(SampleImage, Image, WindowSize):
 	    print len(EmptyPixels)
 	    
         if progress == 0:
-            MaxErrThreshold *= 1.1
+            MaxErrThreshold *= 1.4
+	    print MaxErrThreshold        #############################Parameter
 
 
     return Image
